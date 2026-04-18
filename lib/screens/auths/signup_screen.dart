@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/app_colors.dart';
-import '../../database/database_helper.dart';
+import '../../firebase_auth_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -14,7 +14,9 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  bool _isLoading = false; // Loading state add ki
+  bool _isLoading = false;
+
+  final FirebaseAuthService _authService = FirebaseAuthService();
 
   Future<void> _handleSignup() async {
     String name = _nameController.text.trim();
@@ -55,13 +57,11 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-
-      bool isRegistered = await DatabaseHelper.instance.registerUser(name, email, password);
+      final user = await _authService.signUpWithEmailAndPassword(name, email, password);
 
       if (!mounted) return;
 
-      if (isRegistered) {
-
+      if (user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Account Created Successfully! Please login.', style: TextStyle(color: Colors.white)),
@@ -72,8 +72,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
         Navigator.pop(context);
       } else {
-
-        _showError('This email is already registered. Try logging in.');
+        _showError('Registration failed. The email might already be in use.');
       }
     } catch (e) {
       _showError('An error occurred during registration.');

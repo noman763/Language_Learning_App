@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/app_colors.dart';
 import '../dashboard/main_navigation.dart';
 import 'signup_screen.dart';
-import '../../database/database_helper.dart';
+import '../../firebase_auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,6 +15,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+
+  final FirebaseAuthService _authService = FirebaseAuthService();
 
   Future<void> _handleLogin() async {
     String email = _emailController.text.trim();
@@ -38,13 +40,11 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-
-      bool isValidUser = await DatabaseHelper.instance.verifyLogin(email, password);
+      final user = await _authService.signInWithEmailAndPassword(email, password);
 
       if (!mounted) return;
 
-      if (isValidUser) {
-
+      if (user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Login Successful!', style: TextStyle(color: Colors.white)),
@@ -58,11 +58,10 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (_) => const MainNavigation()),
         );
       } else {
-
         _showError('Incorrect email or password. Please try again.');
       }
     } catch (e) {
-      _showError('Database error occurred.');
+      _showError('Authentication error occurred.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

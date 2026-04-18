@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/app_colors.dart';
 import 'dart:math';
 
@@ -35,7 +37,6 @@ class _QuizScreenState extends State<QuizScreen> {
 
   List<Map<String, dynamic>> _quizData = [];
 
-  // Asli Questions ka Data Bank
   final Map<String, List<Map<String, dynamic>>> _questionBank = {
     'English to Urdu': [
       {'question': 'What is the translation of "Water"?', 'options': ['Pani', 'Aag', 'Hawa', 'Mitti'], 'correctIndex': 0},
@@ -130,7 +131,6 @@ class _QuizScreenState extends State<QuizScreen> {
       _quizData = [];
       Random random = Random();
 
-      // Generating exactly 'totalQs' questions by repeating from the bank if needed
       for (int i = 0; i < totalQs; i++) {
         var randomQ = availableQuestions[random.nextInt(availableQuestions.length)];
         _quizData.add(randomQ);
@@ -149,6 +149,21 @@ class _QuizScreenState extends State<QuizScreen> {
     });
   }
 
+  Future<void> _saveScoreToFirebase() async {
+    if (_score > 0) {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+            'score': FieldValue.increment(_score),
+          });
+        } catch (e) {
+          debugPrint("Error saving score: $e");
+        }
+      }
+    }
+  }
+
   void _nextQuestion() {
     setState(() {
       if (_currentQuestionIndex < _totalQuestions - 1) {
@@ -157,6 +172,7 @@ class _QuizScreenState extends State<QuizScreen> {
         _selectedOption = -1;
       } else {
         _currentStep = 3;
+        _saveScoreToFirebase();
       }
     });
   }
