@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:permission_handler/permission_handler.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_tts/flutter_tts.dart';
-import '../../core/app_colors.dart';
 
 class ListeningScreen extends StatefulWidget {
   const ListeningScreen({super.key});
@@ -10,267 +14,331 @@ class ListeningScreen extends StatefulWidget {
 }
 
 class _ListeningScreenState extends State<ListeningScreen> {
-  final FlutterTts flutterTts = FlutterTts();
-  String _selectedLanguage = 'English';
-  bool _isPlaying = false;
+  late stt.SpeechToText _speech;
+  late FlutterTts _tts;
 
-  final List<String> _languages = ['English', 'Urdu', 'Spanish', 'French', 'Chinese', 'Italian'];
+  bool _isListening = false;
+  bool _isInitialized = false;
+  bool _isLoading = false;
+  bool _isRobotSpeaking = false;
 
-  // Language Codes for TTS
-  final Map<String, String> _langCodes = {
-    'English': 'en-US',
-    'Urdu': 'ur-PK',
-    'Spanish': 'es-ES',
-    'French': 'fr-FR',
-    'Chinese': 'zh-CN',
-    'Italian': 'it-IT',
-  };
+  String _spoken = "";
+  String _feedback = "";
+  double _score = 0;
 
-  // 20 Sentences for each language
-  final Map<String, String> _audioText = {
-    'English': '''1. Hello, welcome to your daily listening practice.
-2. Learning a new language opens a new dimension of the world.
-3. Consistency is the key to mastering any skill.
-4. Do not be afraid of making mistakes.
-5. Mistakes are proof that you are trying.
-6. Listening to native speakers helps improve your pronunciation.
-7. Try to practice speaking for at least ten minutes every day.
-8. Reading books and articles expands your vocabulary.
-9. Writing down new words helps you remember them better.
-10. Language is the road map of a culture.
-11. It tells you where its people come from and where they are going.
-12. The more you listen, the more you understand.
-13. Always stay curious and keep asking questions.
-14. Traveling becomes much more fun when you know the local language.
-15. You can make new friends from different parts of the world.
-16. Watching movies with subtitles is a great way to learn.
-17. Be patient with yourself during this journey.
-18. Every expert was once a beginner.
-19. Celebrate your small victories along the way.
-20. Keep up the great work and never give up!''',
+  // Real-time highlight variables
+  int _currentWordStart = 0;
+  int _currentWordEnd = 0;
 
-    'Urdu': '''1. ہیلو، آپ کی روزانہ کی سننے کی مشق میں خوش آمدید۔
-2. نئی زبان سیکھنا دنیا کا ایک نیا رخ کھولتا ہے۔
-3. مستقل مزاجی کسی بھی مہارت میں مہارت حاصل کرنے کی کلید ہے۔
-4. غلطیاں کرنے سے نہ گھبرائیں۔
-5. غلطیاں اس بات کا ثبوت ہیں کہ آپ کوشش کر رہے ہیں۔
-6. مقامی لوگوں کو سننے سے آپ کا تلفظ بہتر ہوتا ہے۔
-7. روزانہ کم از کم دس منٹ بولنے کی مشق کرنے کی کوشش کریں۔
-8. کتابیں اور مضامین پڑھنے سے آپ کے ذخیرہ الفاظ میں اضافہ ہوتا ہے۔
-9. نئے الفاظ لکھنا انہیں بہتر طریقے سے یاد رکھنے میں مدد کرتا ہے۔
-10. زبان کسی ثقافت کا نقشہ ہوتی ہے۔
-11. یہ بتاتی ہے کہ اس کے لوگ کہاں سے آئے ہیں اور کہاں جا رہے ہیں۔
-12. آپ جتنا زیادہ سنیں گے، اتنا ہی زیادہ سمجھیں گے۔
-13. ہمیشہ متجسس رہیں اور سوالات پوچھتے رہیں۔
-14. جب آپ مقامی زبان جانتے ہوں تو سفر کرنا زیادہ مزے دار ہو جاتا ہے۔
-15. آپ دنیا کے مختلف حصوں سے نئے دوست بنا سکتے ہیں۔
-16. سب ٹائٹلز کے ساتھ فلمیں دیکھنا سیکھنے کا ایک بہترین طریقہ ہے۔
-17. اس سفر کے دوران اپنے ساتھ صابر رہیں۔
-18. ہر ماہر کبھی شروعات کرنے والا تھا۔
-19. راستے میں اپنی چھوٹی کامیابیوں کا جشن منائیں۔
-20. اپنا بہترین کام جاری رکھیں اور کبھی ہمت نہ ہاریں!''',
+  String _selectedLanguage = "English";
+  late String _targetSentence;
 
-    'Spanish': '''1. Hola, bienvenido a tu práctica diaria de escucha.
-2. Aprender un nuevo idioma abre una nueva dimensión del mundo.
-3. La constancia es la clave para dominar cualquier habilidad.
-4. No tengas miedo de cometer errores.
-5. Los errores son la prueba de que lo estás intentando.
-6. Escuchar a hablantes nativos ayuda a mejorar tu pronunciación.
-7. Intenta practicar la expresión oral durante al menos diez minutos cada día.
-8. Leer libros y artículos amplía tu vocabulario.
-9. Escribir las palabras nuevas te ayuda a recordarlas mejor.
-10. El idioma es el mapa de ruta de una cultura.
-11. Te dice de dónde viene su gente y hacia dónde va.
-12. Cuanto más escuches, más entenderás.
-13. Mantente siempre curioso y sigue haciendo preguntas.
-14. Viajar se vuelve mucho más divertido cuando conoces el idioma local.
-15. Puedes hacer nuevos amigos de diferentes partes del mundo.
-16. Ver películas con subtítulos es una excelente manera de aprender.
-17. Sé paciente contigo mismo durante este viaje.
-18. Todo experto fue una vez principiante.
-19. Celebra tus pequeñas victorias en el camino.
-20. ¡Sigue con el gran trabajo y nunca te rindas!''',
-
-    'French': '''1. Bonjour, bienvenue dans votre pratique d'écoute quotidienne.
-2. Apprendre une nouvelle langue ouvre une nouvelle dimension du monde.
-3. La constance est la clé pour maîtriser n'importe quelle compétence.
-4. N'ayez pas peur de faire des erreurs.
-5. Les erreurs sont la preuve que vous essayez.
-6. Écouter des locuteurs natifs aide à améliorer votre prononciation.
-7. Essayez de pratiquer l'expression orale pendant au moins dix minutes chaque jour.
-8. Lire des livres et des articles élargit votre vocabulaire.
-9. Écrire de nouveaux mots vous aide à mieux vous en souvenir.
-10. La langue est la feuille de route d'une culture.
-11. Elle vous dit d'où viennent ses habitants et où ils vont.
-12. Plus vous écoutez, plus vous comprenez.
-13. Restez toujours curieux et continuez à poser des questions.
-14. Voyager devient beaucoup plus amusant lorsque vous connaissez la langue locale.
-15. Vous pouvez vous faire de nouveaux amis de différentes parties du monde.
-16. Regarder des films avec des sous-titres est un excellent moyen d'apprendre.
-17. Soyez patient avec vous-même au cours de ce voyage.
-18. Chaque expert a été un jour un débutant.
-19. Célébrez vos petites victoires en cours de route.
-20. Continuez votre excellent travail et n'abandonnez jamais !''',
-
-    'Chinese': '''1. 你好，欢迎来到你的日常听力练习。
-2. 学习一门新语言打开了世界的一个新维度。
-3. 坚持是掌握任何技能的关键。
-4. 不要害怕犯错。
-5. 犯错证明你正在尝试。
-6. 听母语人士讲话有助于改善你的发音。
-7. 每天尝试练习口语至少十分钟。
-8. 阅读书籍和文章可以扩大你的词汇量。
-9. 写下新单词有助于你更好地记住它们。
-10. 语言是文化的路线图。
-11. 它告诉你它的人民来自哪里，将要去哪里。
-12. 你听得越多，你理解得就越多。
-13. 始终保持好奇心并不断提问。
-14. 当你懂当地语言时，旅行会变得更加有趣。
-15. 你可以结交来自世界各地的新朋友。
-16. 看带字幕的电影是学习的好方法。
-17. 在这段旅程中对自己要有耐心。
-18. 每个专家都曾经是初学者。
-19. 庆祝你沿途的小小胜利。
-20. 继续努力，永远不要放弃！''',
-
-    'Italian': '''1. Ciao, benvenuto alla tua pratica di ascolto quotidiana.
-2. Imparare una nuova lingua apre una nuova dimensione del mondo.
-3. La costanza è la chiave per padroneggiare qualsiasi abilità.
-4. Non aver paura di fare errori.
-5. Gli errori sono la prova che ci stai provando.
-6. Ascoltare i madrelingua aiuta a migliorare la tua pronuncia.
-7. Cerca di esercitarti a parlare per almeno dieci minuti ogni giorno.
-8. Leggere libri e articoli espande il tuo vocabolario.
-9. Scrivere nuove parole ti aiuta a ricordarle meglio.
-10. La lingua è la mappa di una cultura.
-11. Ti dice da dove viene la sua gente e dove sta andando.
-12. Più ascolti, più capisci.
-13. Rimani sempre curioso e continua a fare domande.
-14. Viaggiare diventa molto più divertente quando conosci la lingua locale.
-15. Puoi fare nuove amicizie da diverse parti del mondo.
-16. Guardare film con i sottotitoli è un ottimo modo per imparare.
-17. Sii paziente con te stesso durante questo viaggio.
-18. Ogni esperto è stato un tempo un principiante.
-19. Celebra le tue piccole vittorie lungo la strada.
-20. Continua l'ottimo lavoro e non arrenderti mai!'''
+  // Aapki DOC file wale tamam sentences yahan hain
+  final Map<String, Map<String, dynamic>> _languageConfig = {
+    "English": {
+      "sttLocale": "en_US",
+      "ltCode": "en-US",
+      "ttsLocale": "en-US",
+      "sentences": [
+        "Learning a new language opens a new dimension of the world.",
+        "Technology is evolving faster than we could ever imagine in this era.",
+        "I would like to order a cup of coffee and a grilled sandwich, please.",
+        "Can you tell me how to get to the nearest train station from here?",
+        "Reading books daily improves your vocabulary, focus, and overall mental health.",
+        "Success is not final, failure is not fatal, it is the courage to continue that counts.",
+        "My favorite season is autumn because the weather is perfectly cool and breezy.",
+        "We are planning to travel to the mountains this weekend with our friends.",
+        "Artificial intelligence is transforming the way we work, live, and communicate.",
+        "Please remember to turn off the lights and lock the door before you leave.",
+        "A journey of a thousand miles always begins with a single, determined step.",
+        "Health is wealth, so we must exercise and eat properly every single day.",
+        "The museum holds ancient artifacts that are over five thousand years old.",
+        "Music has the incredible power to heal the soul and calm a stressed mind.",
+        "It is never too late to learn a new skill and change your life entirely.",
+        "The quick brown fox jumps over the lazy dog near the river bank.",
+        "Environmental protection is the most important responsibility of our generation.",
+        "Education is the most powerful weapon which you can use to change the world.",
+        "Time management is the key to achieving your long-term goals effectively.",
+        "Happiness is not something ready made, it comes from your own actions."
+      ]
+    },
+    "Urdu": {
+      "sttLocale": "ur_PK",
+      "ltCode": "auto",
+      "ttsLocale": "ur-PK",
+      "sentences": [
+        "ایک نئی زبان سیکھنا دنیا کا ایک نیا رخ کھولتا ہے۔",
+        "ٹیکنالوجی اس دور میں ہماری سوچ سے بھی زیادہ تیزی سے ترقی کر رہی ہے۔",
+        "میں ایک کپ کافی اور ایک سینڈوچ کا آرڈر دینا چاہوں گا۔",
+        "کیا آپ مجھے بتا سکتے ہیں کہ یہاں سے قریب ترین ٹرین اسٹیشن کا راستہ کیا ہے؟",
+        "روزانہ کتابیں پڑھنے سے آپ کے ذخیرہ الفاظ اور ذہنی صحت میں بہتری آتی ہے۔",
+        "کامیابی حتمی نہیں، ناکامی جان لیوا نہیں، بلکہ آگے بڑھنے کا حوصلہ اہمیت رکھتا ہے۔",
+        "میرا پسندیدہ موسم خزاں ہے کیونکہ اس میں موسم بہت خوشگوار ہوتا ہے۔",
+        "ہم اس اختتام ہفتہ اپنے دوستوں کے ساتھ پہاڑوں کا سفر کرنے کا ارادہ کر رہے ہیں۔",
+        "مصنوعی ذہانت ہمارے کام کرنے اور جینے کے انداز کو مکمل طور پر بدل رہی ہے۔",
+        "براہ کرم کمرے سے باہر نکلنے سے پہلے بتیاں بجھانا اور دروازہ لاک کرنا یاد رکھیں۔",
+        "ہزار میل کا طویل سفر ہمیشہ ایک چھوٹے اور پہلے قدم سے شروع ہوتا ہے۔",
+        "تندرستی ہزار نعمت ہے اس لیے ہمیں روزانہ ورزش اور صحت بخش غذا کھانی چاہیے۔",
+        "عجائب گھر میں ایسے قدیم آثار موجود ہیں جو پانچ ہزار سال سے بھی زیادہ پرانے ہیں۔",
+        "موسیقی میں روح کو سکون دینے اور ذہنی تناؤ کو کم کرنے کی حیرت انگیز طاقت ہے۔",
+        "کوئی نیا ہنر سیکھنے اور اپنی زندگی کو بدلنے میں کبھی دیر نہیں ہوتی۔",
+        "ماحولیاتی تحفظ ہماری موجودہ نسل کی سب سے اہم اور بڑی ذمہ داری ہے۔",
+        "تعلیم وہ سب سے طاقتور ہتھیار ہے جسے استعمال کرکے آپ دنیا بدل سکتے ہیں۔",
+        "وقت کی پابندی اور تنظیم آپ کے طویل مدتی اہداف حاصل کرنے کی کنجی ہے۔",
+        "خوشی کوئی بنی بنائی چیز نہیں ہے، بلکہ یہ آپ کے اپنے اعمال سے پیدا ہوتی ہے۔",
+        "محنت اور لگن سے انسان دنیا کا مشکل ترین کام بھی آسانی سے سرانجام دے سکتا ہے۔"
+      ]
+    },
+    "Spanish": {
+      "sttLocale": "es_ES",
+      "ltCode": "es",
+      "ttsLocale": "es-ES",
+      "sentences": [
+        "Aprender un nuevo idioma abre una nueva dimensión del mundo.",
+        "La tecnología está evolucionando más rápido de lo que imaginamos.",
+        "Me gustaría pedir una taza de café y un sándwich, por favor.",
+        "¿Puedes decirme cómo llegar a la estación de tren más cercana?",
+        "Leer libros a diario mejora tu vocabulario y salud mental.",
+        "El éxito no es definitivo, el fracaso no es fatal.",
+        "La salud es riqueza, así que debemos hacer ejercicio.",
+        "La música tiene el increíble poder de sanar el alma.",
+        "La educación es el arma más poderosa para cambiar el mundo.",
+        "La felicidad no es algo hecho, proviene de tus propias acciones."
+      ]
+    },
+    "French": {
+      "sttLocale": "fr_FR",
+      "ltCode": "fr",
+      "ttsLocale": "fr-FR",
+      "sentences": [
+        "Apprendre une nouvelle langue ouvre une nouvelle dimension.",
+        "La technologie évolue plus vite que nous ne pourrions l'imaginer.",
+        "Je voudrais commander une tasse de café, s'il vous plaît.",
+        "Le succès n'est pas final, l'échec n'est pas fatal.",
+        "La santé est la richesse, nous devons faire de l'exercice.",
+        "La musique a le pouvoir incroyable de guérir l'âme.",
+        "L'éducation est l'arme la plus puissante au monde.",
+        "Le bonheur n'est pas quelque chose de tout fait.",
+        "Un voyage de mille kilomètres commence par un seul pas.",
+        "Avec un travail acharné, on peut tout accomplir."
+      ]
+    },
+    "Italian": {
+      "sttLocale": "it_IT",
+      "ltCode": "it",
+      "ttsLocale": "it-IT",
+      "sentences": [
+        "Imparare una nuova lingua apre una nuova dimensione.",
+        "La tecnologia si sta evolvendo più velocemente possibile.",
+        "Vorrei ordinare una tazza di caffè, per favore.",
+        "Il successo non è definitivo, il fallimento non è fatale.",
+        "La salute è ricchezza, dobbiamo fare esercizio ogni giorno.",
+        "La musica ha l'incredibile potere di guarire l'anima.",
+        "L'istruzione è l'arma più potente per cambiare il mondo.",
+        "La felicità non è qualcosa di pronto, deriva dalle tue azioni.",
+        "Un viaggio di mille miglia inizia con un solo passo.",
+        "Con il duro lavoro si può ottenere qualsiasi cosa."
+      ]
+    },
+    "Chinese": {
+      "sttLocale": "zh_CN",
+      "ltCode": "zh",
+      "ttsLocale": "zh-CN",
+      "sentences": [
+        "学习一门新语言能打开世界的新维度。",
+        "在这个时代，技术的发展速度超乎我们的想象。",
+        "请给我来一杯咖啡和一个三明治。",
+        "你能告诉我从这里到最近的火车站怎么走吗？",
+        "每天读书能提高你的词汇量和心理健康。",
+        "成功不是终点，失败也并非致命。",
+        "健康就是财富，所以我们必须每天锻炼。",
+        "音乐拥有一种不可思议的力量，能治愈灵魂。",
+        "教育是你可以用来改变世界的最强大的武器。",
+        "幸福来自你自己的行动。"
+      ]
+    }
   };
 
   @override
   void initState() {
     super.initState();
+    _speech = stt.SpeechToText();
     _initTts();
+    _loadRandomSentence();
+    _initSpeech();
   }
 
   void _initTts() {
-    flutterTts.setCompletionHandler(() {
+    _tts = FlutterTts();
+    _tts.setProgressHandler((String text, int start, int end, String word) {
       setState(() {
-        _isPlaying = false;
+        _currentWordStart = start;
+        _currentWordEnd = end;
+      });
+    });
+    _tts.setCompletionHandler(() {
+      setState(() {
+        _isRobotSpeaking = false;
+        _currentWordStart = 0;
+        _currentWordEnd = 0;
       });
     });
   }
 
-  Future<void> _speak() async {
-    String textToSpeak = _audioText[_selectedLanguage] ?? "Text not available.";
-    String langCode = _langCodes[_selectedLanguage] ?? "en-US";
-
-    await flutterTts.setLanguage(langCode);
-    await flutterTts.setPitch(1.0);
-    await flutterTts.setSpeechRate(0.4); // Speed thori slow ki hai taake samajh aaye
-
-    setState(() => _isPlaying = true);
-    await flutterTts.speak(textToSpeak);
+  Future<void> _robotSpeak() async {
+    String locale = _languageConfig[_selectedLanguage]!["ttsLocale"];
+    await _tts.setLanguage(locale);
+    await _tts.setSpeechRate(0.4);
+    setState(() => _isRobotSpeaking = true);
+    await _tts.speak(_targetSentence);
   }
 
-  Future<void> _stop() async {
-    await flutterTts.stop();
-    setState(() => _isPlaying = false);
+  void _loadRandomSentence() {
+    final sentences = _languageConfig[_selectedLanguage]!["sentences"] as List<String>;
+    final random = Random();
+    if (mounted) {
+      setState(() {
+        _targetSentence = sentences[random.nextInt(sentences.length)];
+        _spoken = "";
+        _feedback = "";
+        _score = 0;
+        _currentWordStart = 0;
+        _currentWordEnd = 0;
+      });
+      Future.delayed(const Duration(milliseconds: 600), () => _robotSpeak());
+    }
   }
 
-  @override
-  void dispose() {
-    flutterTts.stop();
-    super.dispose();
+  void _initSpeech() async {
+    await Permission.microphone.request();
+    _isInitialized = await _speech.initialize();
+    if (mounted) setState(() {});
+  }
+
+  void _startListening() async {
+    if (!_isInitialized) return;
+    setState(() {
+      _isListening = true;
+      _spoken = "";
+      _feedback = "";
+    });
+    String localeId = _languageConfig[_selectedLanguage]!["sttLocale"];
+    await _speech.listen(
+      onResult: (val) {
+        if (mounted) setState(() => _spoken = val.recognizedWords);
+      },
+      localeId: localeId,
+    );
+  }
+
+  void _stopListening() async {
+    await _speech.stop();
+    setState(() => _isListening = false);
+    if (_spoken.isNotEmpty) _analyze();
+  }
+
+  Future<void> _analyze() async {
+    setState(() => _isLoading = true);
+    String cleanTarget = _targetSentence.toLowerCase().replaceAll(RegExp(r'[.,!?¿¡،۔]+'), '');
+    String cleanSpoken = _spoken.toLowerCase().replaceAll(RegExp(r'[.,!?¿¡،۔]+'), '');
+
+    List<String> targetWords = _selectedLanguage == "Chinese" ? cleanTarget.split('') : cleanTarget.split(' ');
+    List<String> spokenWords = _selectedLanguage == "Chinese" ? cleanSpoken.split('') : cleanSpoken.split(' ');
+
+    int correct = 0;
+    for (var word in spokenWords) {
+      if (targetWords.contains(word)) {
+        correct++;
+        targetWords.remove(word);
+      }
+    }
+
+    double score = (correct / (_selectedLanguage == "Chinese" ? (correct + targetWords.length) : cleanTarget.split(' ').length)) * 100;
+
+    setState(() {
+      _score = score.clamp(0, 100);
+      _feedback = _score >= 90 ? "Excellent! 🎉" : "Keep practicing! 💪";
+      _isLoading = false;
+    });
+    if (_score >= 99) Future.delayed(const Duration(seconds: 2), () => _loadRandomSentence());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xfff5f7fb),
       appBar: AppBar(
-        title: const Text('Listening Practice', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.background,
+        title: const Text("Listening Practice", style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        foregroundColor: Colors.black,
+        actions: [
+          DropdownButton<String>(
+            value: _selectedLanguage,
+            items: _languageConfig.keys.map((lang) => DropdownMenuItem(value: lang, child: Text(lang))).toList(),
+            onChanged: (val) {
+              if (val != null) setState(() { _selectedLanguage = val; _loadRandomSentence(); });
+            },
+          ),
+          const SizedBox(width: 15),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            DropdownButtonFormField<String>(
-              initialValue: _selectedLanguage,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-              ),
-              items: _languages.map((l) => DropdownMenuItem(value: l, child: Text(l))).toList(),
-              onChanged: (val) {
-                setState(() {
-                  _selectedLanguage = val!;
-                  _stop(); // Stop audio if language changes
-                });
-              },
-            ),
-            const SizedBox(height: 30),
-
-            // Animated Visualizer Mock
             Container(
-              height: 150,
-              decoration: BoxDecoration(
-                color: _isPlaying ? AppColors.accentPrimary.withOpacity(0.2) : AppColors.accentPrimary.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Center(
-                child: Icon(Icons.graphic_eq, size: _isPlaying ? 100 : 80, color: AppColors.accentPrimary),
-              ),
-            ),
-            const SizedBox(height: 40),
-
-            // Play/Stop Button
-            FloatingActionButton.large(
-              backgroundColor: AppColors.accentPrimary,
-              onPressed: _isPlaying ? _stop : _speak,
-              child: Icon(_isPlaying ? Icons.stop : Icons.play_arrow, size: 40, color: Colors.white),
-            ),
-            const SizedBox(height: 30),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text("Transcript:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Text(
-                    _audioText[_selectedLanguage] ?? "",
-                    style: TextStyle(
-                      fontSize: 18,
-                      height: 1.6,
-                      fontFamily: _selectedLanguage == 'Urdu' ? 'Jameel Noori Nastaleeq' : null, // Urdu ke liye font (agar add kiya hai toh)
-                    ),
-                    textAlign: _selectedLanguage == 'Urdu' ? TextAlign.right : TextAlign.left,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)]),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(_isRobotSpeaking ? "Robot Speaking..." : "Listen carefully", style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                      IconButton(icon: const Icon(Icons.volume_up, color: Colors.teal), onPressed: _robotSpeak)
+                    ],
                   ),
-                ),
+                  const SizedBox(height: 20),
+                  RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(text: _targetSentence.substring(0, _currentWordStart), style: TextStyle(fontSize: _selectedLanguage == "Urdu" ? 26 : 22, color: Colors.black)),
+                        TextSpan(
+                          text: _targetSentence.substring(_currentWordStart, _currentWordEnd),
+                          style: TextStyle(fontSize: _selectedLanguage == "Urdu" ? 28 : 24, fontWeight: FontWeight.bold, color: Colors.white, backgroundColor: Colors.teal),
+                        ),
+                        TextSpan(text: _targetSentence.substring(_currentWordEnd), style: TextStyle(fontSize: _selectedLanguage == "Urdu" ? 26 : 22, color: Colors.black)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 60),
+            GestureDetector(
+              onLongPress: _startListening,
+              onLongPressUp: _stopListening,
+              child: CircleAvatar(
+                radius: 40,
+                backgroundColor: _isListening ? Colors.red : Colors.teal,
+                child: Icon(_isListening ? Icons.mic : Icons.mic_none, color: Colors.white, size: 40),
+              ),
+            ),
+            const SizedBox(height: 15),
+            Text(_isListening ? "Listening..." : "Hold Mic to Repeat", style: const TextStyle(fontWeight: FontWeight.bold)),
+
+            if (_feedback.isNotEmpty) ...[
+              const SizedBox(height: 30),
+              Text("Score: ${_score.toInt()}%", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              Text(_feedback, style: const TextStyle(color: Colors.teal, fontSize: 18)),
+              const SizedBox(height: 10),
+              Text("You said: \"$_spoken\"", style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
+            ],
+
+            const SizedBox(height: 50),
+            ElevatedButton.icon(onPressed: _loadRandomSentence, icon: const Icon(Icons.skip_next), label: const Text("Next Sentence")),
           ],
         ),
       ),

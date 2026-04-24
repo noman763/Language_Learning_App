@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/app_colors.dart';
 import '../dashboard/main_navigation.dart';
 import 'signup_screen.dart';
@@ -69,6 +70,30 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleForgotPassword() async {
+    String email = _emailController.text.trim();
+
+    if (email.isEmpty || !email.endsWith('@gmail.com')) {
+      _showError('Please enter a valid @gmail.com to reset password.');
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Password reset link sent to $email'),
+          backgroundColor: AppColors.accentPrimary,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      _showError('User not found or connection error.');
+    }
+  }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -114,7 +139,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton(onPressed: () {}, child: const Text('Forgot Password?', style: TextStyle(color: AppColors.accentSecondary))),
+                  child: TextButton(
+                      onPressed: _handleForgotPassword,
+                      child: const Text('Forgot Password?', style: TextStyle(color: AppColors.accentSecondary, fontWeight: FontWeight.w600))
+                  ),
                 ),
                 const SizedBox(height: 20),
 
@@ -152,10 +180,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildTextField({required String hint, required IconData icon, required bool obscureText, required TextEditingController controller}) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 5))]),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 5))]
+      ),
       child: TextField(
         controller: controller,
         obscureText: obscureText,
+        style: const TextStyle(color: AppColors.textPrimary),
         decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(color: Colors.grey),

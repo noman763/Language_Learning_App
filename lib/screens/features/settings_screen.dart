@@ -12,7 +12,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // Switch ki initial value check karne ke liye logic
+
   bool _isDarkMode = themeNotifier.value == ThemeMode.dark;
   bool _isNotificationsOn = true;
 
