@@ -5,6 +5,7 @@ import '../../core/app_colors.dart';
 import 'instructor_screen.dart';
 import '../auths/login_screen.dart';
 import 'settings_screen.dart';
+import 'help_info_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -152,7 +153,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildMenuItem(Icons.person_search_outlined, "Find Instructor", () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const InstructorScreen()));
               }),
-              _buildMenuItem(Icons.help_outline, "Help & Info", () {}),
+              // Help & Info button ko yahan clickable banaya gaya hai
+              _buildMenuItem(Icons.help_outline, "Help & Info", () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpInfoScreen()));
+              }),
             ]),
             const SizedBox(height: 20),
             _buildMenuCard([
