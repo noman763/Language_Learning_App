@@ -15,7 +15,6 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-
         elevation: 0,
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,7 +31,7 @@ class HomeScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: const LinearGradient(colors: [Colors.orange, Colors.deepOrange]),
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: Colors.orange.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 3))],
+                boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 3))],
               ),
               child: const Icon(Icons.flag, color: Colors.white, size: 22),
             ),
@@ -46,14 +45,13 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Stylish Banner
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [AppColors.accentPrimary, AppColors.accentPrimary.withValues(alpha: 0.7)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  gradient: LinearGradient(colors: [AppColors.accentPrimary, AppColors.accentPrimary.withOpacity(0.7)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                   borderRadius: BorderRadius.circular(25),
-                  boxShadow: [BoxShadow(color: AppColors.accentPrimary.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 8))],
+                  boxShadow: [BoxShadow(color: AppColors.accentPrimary.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
                 ),
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,13 +62,9 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 35),
-
               const Text('Explore Modules', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
               const SizedBox(height: 20),
-
-              // Grid View for Modules
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -79,7 +73,6 @@ class HomeScreen extends StatelessWidget {
                 mainAxisSpacing: 20,
                 childAspectRatio: 0.85,
                 children: [
-
                   HoverableModuleCard(
                       title: 'Reading Practice',
                       icon: Icons.menu_book_rounded,
@@ -90,7 +83,7 @@ class HomeScreen extends StatelessWidget {
                       title: 'Writing Eval',
                       icon: Icons.edit_note_rounded,
                       color: Colors.blueAccent,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WritingEvaluationScreen()))
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => WritingEvaluationScreen()))
                   ),
                   HoverableModuleCard(
                       title: 'Speaking',
@@ -126,7 +119,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-
 
 class HoverableModuleCard extends StatefulWidget {
   final String title;
@@ -165,7 +157,7 @@ class _HoverableModuleCardState extends State<HoverableModuleCard> {
             borderRadius: BorderRadius.circular(25),
             boxShadow: [
               BoxShadow(
-                color: widget.color.withValues(alpha: _isHovered ? 0.5 : 0.1),
+                color: widget.color.withOpacity(_isHovered ? 0.5 : 0.1),
                 blurRadius: _isHovered ? 25 : 10,
                 offset: Offset(0, _isHovered ? 12 : 5),
               )
@@ -175,7 +167,6 @@ class _HoverableModuleCardState extends State<HoverableModuleCard> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icon Container
               AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 padding: const EdgeInsets.all(18),
@@ -187,12 +178,10 @@ class _HoverableModuleCardState extends State<HoverableModuleCard> {
                 child: Icon(
                   widget.icon,
                   size: _isHovered ? 42 : 36,
-                  color: _isHovered ? widget.color : widget.color,
+                  color: widget.color,
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Title Text
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 250),
                 style: TextStyle(

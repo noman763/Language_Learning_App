@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'core/app_colors.dart';
 import 'screens/auths/intro_screen.dart';
 import 'screens/dashboard/main_navigation.dart';
@@ -21,15 +22,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 2. ValueListenableBuilder use kiya taake theme switch hote hi app update ho
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (_, ThemeMode currentMode, __) {
-        return MaterialApp(
+        return GetMaterialApp(
           title: 'Language Learning App',
           debugShowCheckedModeBanner: false,
 
-          // Light Theme configuration
           theme: ThemeData(
             brightness: Brightness.light,
             scaffoldBackgroundColor: AppColors.background,
@@ -37,10 +36,10 @@ class MyApp extends StatelessWidget {
             colorScheme: ColorScheme.fromSeed(seedColor: AppColors.accentPrimary),
           ),
 
-          // 3. Dark Theme configuration add ki
+          // Dark Theme configuration
           darkTheme: ThemeData(
             brightness: Brightness.dark,
-            scaffoldBackgroundColor: const Color(0xFF121212), // Dark background
+            scaffoldBackgroundColor: const Color(0xFF121212),
             primaryColor: AppColors.accentPrimary,
             colorScheme: const ColorScheme.dark(
               primary: AppColors.accentPrimary,
@@ -48,7 +47,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
 
-          themeMode: currentMode, // Current mode (light ya dark)
+          themeMode: currentMode,
 
           home: StreamBuilder<User?>(
             stream: FirebaseAuth.instance.authStateChanges(),
