@@ -1,50 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get.dart';
 import '../../core/app_colors.dart';
-import '../../main.dart';
-import '../auths/login_screen.dart';
+import '../../controllers/settings_controller.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-
-  bool _isDarkMode = themeNotifier.value == ThemeMode.dark;
-  bool _isNotificationsOn = true;
-
-  Future<void> _handleChangePassword() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.email != null) {
-      try {
-        await FirebaseAuth.instance.sendPasswordResetEmail(email: user.email!);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Reset link sent to ${user.email}")),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error: ${e.toString()}")),
-          );
-        }
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final SettingsController controller = Get.put(SettingsController());
+
     return Scaffold(
-      // Scaffold ka background theme ke mutabiq khud change hoga
       appBar: AppBar(
-        title: const Text(
-          'Settings',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
         centerTitle: true,
       ),
@@ -52,60 +20,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           const SizedBox(height: 10),
           _buildSectionHeader("Appearance"),
-          SwitchListTile(
+          Obx(() => SwitchListTile(
             title: const Text("Dark Mode"),
             subtitle: const Text("Change app theme to dark"),
-            value: _isDarkMode,
+            value: controller.isDarkMode.value,
             activeColor: AppColors.accentPrimary,
-            onChanged: (bool value) {
-              setState(() {
-                _isDarkMode = value;
-              });
-              // Ye line poori app ka color change karegi
-              themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
-            },
-          ),
+            onChanged: (value) => controller.toggleTheme(value),
+          )),
 
           _buildSectionHeader("Notifications"),
-          SwitchListTile(
+          Obx(() => SwitchListTile(
             title: const Text("Push Notifications"),
             subtitle: const Text("Daily reminders for learning"),
-            value: _isNotificationsOn,
+            value: controller.isNotificationsOn.value,
             activeColor: AppColors.accentPrimary,
-            onChanged: (bool value) {
-              setState(() {
-                _isNotificationsOn = value;
-              });
-            },
-          ),
+            onChanged: (value) => controller.toggleNotifications(value),
+          )),
 
           _buildSectionHeader("Account Security"),
           ListTile(
             leading: const Icon(Icons.lock_outline, color: AppColors.accentPrimary),
             title: const Text("Change Password"),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: _handleChangePassword,
+            onTap: () => controller.changePassword(),
           ),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.orange),
             title: const Text("Logout"),
-            onTap: () async {
-              await FirebaseAuth.instance.signOut();
-              if (mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      (route) => false,
-                );
-              }
-            },
+            onTap: () => controller.logout(),
           ),
           ListTile(
             leading: const Icon(Icons.delete_forever, color: Colors.red),
             title: const Text("Delete Account", style: TextStyle(color: Colors.red)),
-            onTap: () {
-              _showDeleteDialog(context);
-            },
+            onTap: () => _showDeleteDialog(context, controller),
           ),
         ],
       ),
@@ -117,44 +64,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
       child: Text(
         title,
-        style: const TextStyle(
-          color: AppColors.accentPrimary,
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
+        style: const TextStyle(color: AppColors.accentPrimary, fontWeight: FontWeight.bold, fontSize: 14),
       ),
     );
   }
 
-  void _showDeleteDialog(BuildContext context) {
+  void _showDeleteDialog(BuildContext context, SettingsController controller) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Delete Account?"),
         content: const Text("Kya aap waqai account delete karna chahte hain?"),
         actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text("Cancel")),
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await FirebaseAuth.instance.currentUser?.delete();
-                if (mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        (route) => false,
-                  );
-                }
-              } catch (e) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Please re-login to delete account")),
-                );
-              }
-            },
+            onPressed: () => controller.deleteAccount(),
             child: const Text("Delete", style: TextStyle(color: Colors.red)),
           ),
         ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../core/app_colors.dart';
-import 'login_screen.dart';
+import '../auths/login_screen.dart';
 
 class IntroScreen extends StatelessWidget {
   const IntroScreen({super.key});
@@ -111,10 +112,8 @@ class IntroScreen extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () => Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        ),
+                        // GetX Navigation used here
+                        onPressed: () => Get.offAll(() => LoginScreen()),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.accentPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 20),
