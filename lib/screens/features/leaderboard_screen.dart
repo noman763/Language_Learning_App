@@ -62,11 +62,11 @@ class LeaderboardScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isTop3
-                      ? AppColors.accentPrimary.withOpacity(0.1)
+                      ? AppColors.accentPrimary.withValues(alpha: 0.1)
                       : Colors.white,
                   borderRadius: BorderRadius.circular(15),
                   border: isTop3
-                      ? Border.all(color: AppColors.accentPrimary.withOpacity(0.5))
+                      ? Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.5))
                       : null,
                   boxShadow: const [
                     BoxShadow(color: Colors.black12, blurRadius: 4)
@@ -114,7 +114,7 @@ class LeaderboardScreen extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.accentSecondary.withOpacity(0.2),
+                        color: AppColors.accentSecondary.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(

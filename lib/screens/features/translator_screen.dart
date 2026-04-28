@@ -163,7 +163,7 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.accentPrimary.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.2)),
                   boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 5)],
                 ),
                 child: Column(
@@ -227,9 +227,9 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.accentPrimary.withOpacity(0.05),
+                  color: AppColors.accentPrimary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.accentPrimary.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.2)),
                   boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 5)],
                 ),
                 child: Column(

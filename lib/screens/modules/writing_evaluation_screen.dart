@@ -62,7 +62,6 @@ class WritingEvaluationScreen extends StatelessWidget {
                   maxLines: 7,
                   style: const TextStyle(fontSize: 16),
                   decoration: InputDecoration(
-                    // Obx use kiya hint text change karne ke liye
                     hintText: "Type something...",
                     hintStyle: const TextStyle(color: Colors.grey),
                     border: const OutlineInputBorder(borderSide: BorderSide.none),
@@ -72,7 +71,6 @@ class WritingEvaluationScreen extends StatelessWidget {
               ),
               const SizedBox(height: 30),
 
-              // Button aur Loading State (Obx ke sath)
               Obx(() => controller.isLoading.value
                   ? const Center(child: CircularProgressIndicator(color: AppColors.accentPrimary))
                   : ElevatedButton(
@@ -88,7 +86,6 @@ class WritingEvaluationScreen extends StatelessWidget {
 
               const SizedBox(height: 30),
 
-              // Results Section (Obx ke sath)
               Obx(() => controller.hasEvaluated.value
                   ? _buildResultsSection()
                   : const SizedBox.shrink()),
@@ -111,7 +108,7 @@ class WritingEvaluationScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isPerfect ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+            color: isPerfect ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: isPerfect ? Colors.green : Colors.orange),
           ),
@@ -139,7 +136,7 @@ class WritingEvaluationScreen extends StatelessWidget {
             return Container(
               margin: const EdgeInsets.only(bottom: 15),
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.redAccent.withOpacity(0.3)), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 2))]),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 2))]),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

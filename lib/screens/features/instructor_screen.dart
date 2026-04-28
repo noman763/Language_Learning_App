@@ -84,7 +84,7 @@ class _InstructorScreenState extends State<InstructorScreen> {
                 color: isSelected ? AppColors.accentPrimary : Colors.white,
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(color: isSelected ? AppColors.accentPrimary : Colors.grey.shade300),
-                boxShadow: isSelected ? [BoxShadow(color: AppColors.accentPrimary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : [],
+                boxShadow: isSelected ? [BoxShadow(color: AppColors.accentPrimary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))] : [],
               ),
               child: Center(
                 child: Text(
@@ -110,7 +110,7 @@ class _InstructorScreenState extends State<InstructorScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 5)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 15, offset: const Offset(0, 5)),
         ],
       ),
       child: Padding(

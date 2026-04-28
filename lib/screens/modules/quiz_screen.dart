@@ -137,7 +137,7 @@ class QuizScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                  color: AppColors.accentSecondary.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
+                  color: AppColors.accentSecondary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
               child: Text('Score: ${controller.score.value}',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.accentSecondary)),
             ),
